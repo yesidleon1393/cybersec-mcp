@@ -18,6 +18,8 @@ Un servidor MCP (Model Context Protocol) que expone a **Prof. Null** como un con
 | `ctf_hint` | Pistas progresivas para CTF challenges (sin spoilers, o con ellos) |
 | `list_tools` | Catálogo de herramientas por categoría con comparativas |
 | `search_cve` | Análisis técnico de CVEs: mecanismo, exploit, mitigación |
+| `health_check` | Comprueba si el servidor está activo y muestra su configuración básica. |
+| `describe_tool` | Describe brevemente una herramienta MCP disponible en este servidor. |
 
 ## Instalación
 
@@ -41,6 +43,9 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 # 4. Probar que funciona
 node src/index.js
 # Deberías ver: 🛡️  Cybersecurity Professor MCP Server running
+
+# 5. Ejecutar tests
+npm test
 ```
 
 ### Configurar en Claude Desktop
@@ -134,6 +139,15 @@ cybersec-mcp/
 | Variable | Requerida | Descripción |
 |----------|-----------|-------------|
 | `ANTHROPIC_API_KEY` | ✅ Sí | Tu API key de Anthropic (console.anthropic.com) |
+| `ANTHROPIC_API_BASE_URL` | ❌ No | URL base de API de Anthropic (por defecto: https://api.anthropic.com) |
+| `CLAUDE_MODEL` | ❌ No | Modelo Claude a usar. Default: `claude-sonnet-4-20250514` |
+| `CLAUDE_MAX_TOKENS` | ❌ No | Tope de tokens por llamada. Default: `4096` |
+| `ANTHROPIC_API_TIMEOUT_MS` | ❌ No | Timeout de llamada en ms. Default: `30000` |
+| `ANTHROPIC_API_RETRIES` | ❌ No | Reintentos ante errores transitorios. Default: `2` |
+| `MCP_SERVER_NAME` | ❌ No | Nombre del servidor MCP expuesto. Default: `cybersecurity-professor` |
+| `MCP_SERVER_VERSION` | ❌ No | Versión del MCP. Default: `1.0.0` |
+| `LOG_LEVEL` | ❌ No | Nivel de logs: `debug`, `info`, `warn`, `error`. Default: `info` |
+| `NODE_ENV` | ❌ No | Entorno de ejecución: `development`, `production`, `test`. Default: `development` |
 
 ## Consideraciones de uso
 

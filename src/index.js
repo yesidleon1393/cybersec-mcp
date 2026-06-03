@@ -14,35 +14,33 @@
  *  - search_cve         → Busca CVEs y explica vulnerabilidades
  */
 
-import dotenv from "dotenv";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { PROFESSOR_SYSTEM_PROMPT } from "./professor.js";
 import { TOOLS_DATA } from "./data/tools.js";
 import { ROADMAP_DATA } from "./data/roadmap.js";
-
-dotenv.config();
-
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const anthropicModel = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
-const anthropicMaxTokens = Number(process.env.CLAUDE_MAX_TOKENS || 4096);
-const serverName = process.env.MCP_SERVER_NAME || "cybersecurity-professor";
-const serverVersion = process.env.MCP_SERVER_VERSION || "1.0.0";
-
-if (!anthropicApiKey) {
-  throw new Error(
-    "Missing ANTHROPIC_API_KEY environment variable. Define it in a .env file or in your shell environment."
-  );
-}
-
-const client = new Anthropic({ apiKey: anthropicApiKey });
+import { config } from "./config.js";
+import { logger } from "./logger.js";
+import { askAnthropic } from "./anthropic-client.js";
 
 const server = new McpServer({
-  name: serverName,
-  version: serverVersion,
+  name: config.MCP_SERVER_NAME,
+  version: config.MCP_SERVER_VERSION,
 });
+
+const TOOL_METADATA = {
+  ask_professor: "Pregunta libre al Prof. Null sobre ciberseguridad con contexto técnico.",
+  get_roadmap: "Genera una ruta de aprendizaje personalizada basada en nivel, objetivo y tiempo disponible.",
+  get_cheatsheet: "Crea un cheatsheet completo de una herramienta de hacking con ejemplos reales.",
+  explain_attack: "Explica un ataque o vulnerabilidad con técnica, PoC y mitigaciones.",
+  generate_lab: "Genera un laboratorio práctico paso a paso para entrenar una técnica de seguridad.",
+  ctf_hint: "Da pistas progresivas para challenges de CTF, desde suaves hasta solución completa.",
+  list_tools: "Lista herramientas de ciberseguridad por categoría y contexto de uso.",
+  search_cve: "Analiza un CVE o vulnerabilidad con mecanismo, detección y mitigación.",
+  health_check: "Verifica que el servidor MCP está activo y muestra su configuración básica.",
+  describe_tool: "Describe una herramienta MCP disponible en este servidor.",
+};
 
 // ─── Helper: call Claude as Prof. Null ───────────────────────────────────────
 
@@ -51,14 +49,22 @@ async function askProfNull(userPrompt, extraContext = "") {
     ? `${PROFESSOR_SYSTEM_PROMPT}\n\n## Contexto adicional para esta consulta:\n${extraContext}`
     : PROFESSOR_SYSTEM_PROMPT;
 
-  const message = await client.messages.create({
-    model: anthropicModel,
-    max_tokens: anthropicMaxTokens,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
+  logger.debug("Sending prompt to Anthropic", {
+    hasExtraContext: Boolean(extraContext),
   });
 
-  return message.content[0].type === "text" ? message.content[0].text : "";
+  const response = await askAnthropic({
+    userPrompt,
+    systemPrompt,
+    model: config.CLAUDE_MODEL,
+    maxTokens: config.CLAUDE_MAX_TOKENS,
+  });
+
+  const firstContent = Array.isArray(response.content)
+    ? response.content[0]
+    : response?.content;
+
+  return firstContent?.type === "text" ? firstContent.text : String(firstContent ?? "");
 }
 
 // ─── Tool: ask_professor ──────────────────────────────────────────────────────
@@ -440,6 +446,56 @@ Recuerda mantener el balance entre enseñar y no spoilear más de lo pedido.`;
 
     return {
       content: [{ type: "text", text: response }],
+    };
+  }
+);
+
+// ─── Tool: health_check ───────────────────────────────────────────────────────
+
+server.tool(
+  "health_check",
+  "Comprueba si el servidor MCP está activo y qué configuración básica está cargada.",
+  {
+    verbose: z.boolean().optional().default(false),
+  },
+  async ({ verbose }) => {
+    const status = `ok — ${config.MCP_SERVER_NAME} v${config.MCP_SERVER_VERSION}`;
+    const details = verbose
+      ? `Modelo=${config.CLAUDE_MODEL}, max_tokens=${config.CLAUDE_MAX_TOKENS}, log_level=${config.LOG_LEVEL}`
+      : "";
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `${status}${verbose ? "\n" + details : ""}`,
+        },
+      ],
+    };
+  }
+);
+
+// ─── Tool: describe_tool ─────────────────────────────────────────────────────
+
+server.tool(
+  "describe_tool",
+  "Describe brevemente una herramienta MCP disponible en este servidor.",
+  {
+    tool_name: z.string().describe("Nombre de la herramienta MCP a describir"),
+  },
+  async ({ tool_name }) => {
+    const description = TOOL_METADATA[tool_name];
+    if (!description) {
+      throw new Error(`Tool not found: ${tool_name}`);
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `*${tool_name}*: ${description}`,
+        },
+      ],
     };
   }
 );
