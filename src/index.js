@@ -14,6 +14,7 @@
  *  - search_cve         → Busca CVEs y explica vulnerabilidades
  */
 
+import dotenv from "dotenv";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import Anthropic from "@anthropic-ai/sdk";
@@ -22,13 +23,25 @@ import { PROFESSOR_SYSTEM_PROMPT } from "./professor.js";
 import { TOOLS_DATA } from "./data/tools.js";
 import { ROADMAP_DATA } from "./data/roadmap.js";
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+dotenv.config();
 
-const client = new Anthropic();
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+const anthropicModel = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+const anthropicMaxTokens = Number(process.env.CLAUDE_MAX_TOKENS || 4096);
+const serverName = process.env.MCP_SERVER_NAME || "cybersecurity-professor";
+const serverVersion = process.env.MCP_SERVER_VERSION || "1.0.0";
+
+if (!anthropicApiKey) {
+  throw new Error(
+    "Missing ANTHROPIC_API_KEY environment variable. Define it in a .env file or in your shell environment."
+  );
+}
+
+const client = new Anthropic({ apiKey: anthropicApiKey });
 
 const server = new McpServer({
-  name: "cybersecurity-professor",
-  version: "1.0.0",
+  name: serverName,
+  version: serverVersion,
 });
 
 // ─── Helper: call Claude as Prof. Null ───────────────────────────────────────
@@ -39,8 +52,8 @@ async function askProfNull(userPrompt, extraContext = "") {
     : PROFESSOR_SYSTEM_PROMPT;
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
+    model: anthropicModel,
+    max_tokens: anthropicMaxTokens,
     system: systemPrompt,
     messages: [{ role: "user", content: userPrompt }],
   });
