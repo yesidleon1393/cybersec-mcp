@@ -29,7 +29,7 @@ Un servidor MCP (Model Context Protocol) que expone a **Prof. Null** como un con
 
 ```bash
 # 1. Clonar o descomprimir el servidor
-cd cybersecurity-professor-mcp
+cd cybersec-mcp
 
 # 2. Instalar dependencias
 npm install
@@ -52,7 +52,7 @@ Edita `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) 
   "mcpServers": {
     "cybersecurity-professor": {
       "command": "node",
-      "args": ["/ruta/absoluta/a/cybersecurity-professor-mcp/src/index.js"],
+      "args": ["/ruta/absoluta/a/cybersec-mcp/src/index.js"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-tu-api-key-aqui"
       }
@@ -70,7 +70,7 @@ En `.cursor/mcp.json`:
   "mcpServers": {
     "cybersecurity-professor": {
       "command": "node",
-      "args": ["/ruta/absoluta/a/cybersecurity-professor-mcp/src/index.js"],
+      "args": ["/ruta/absoluta/a/cybersec-mcp/src/index.js"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-tu-api-key-aqui"
       }
@@ -86,7 +86,7 @@ En `.cursor/mcp.json`:
   "mcpServers": {
     "cybersecurity-professor": {
       "command": "npx",
-      "args": ["cybersecurity-professor-mcp"],
+      "args": ["cybersec-mcp"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-tu-api-key-aqui"
       }
@@ -118,7 +118,7 @@ En `.cursor/mcp.json`:
 ## Estructura del proyecto
 
 ```
-cybersecurity-professor-mcp/
+cybersec-mcp/
 ├── src/
 │   ├── index.js          # MCP Server principal + definición de todas las herramientas
 │   ├── professor.js      # System prompt de Prof. Null
